@@ -6,22 +6,27 @@ type Dependency struct {
 	Version string
 }
 
-// DependencyChange represents a version change for a single module between
-// two branches or snapshots.
-type DependencyChange struct {
-	Module     string
+// DiffEntry represents a change in a dependency between two branches.
+type DiffEntry struct {
+	Module  string
 	OldVersion string
 	NewVersion string
+	ChangeType ChangeType
 }
 
-// DiffResult holds the categorised differences between two dependency sets.
-type DiffResult struct {
-	Added   []Dependency
-	Removed []Dependency
-	Changed []DependencyChange
-}
+// ChangeType indicates how a dependency changed.
+type ChangeType string
 
-// IsEmpty returns true when the DiffResult contains no changes.
-func (d DiffResult) IsEmpty() bool {
-	return len(d.Added) == 0 && len(d.Removed) == 0 && len(d.Changed) == 0
-}
+const (
+	Added   ChangeType = "added"
+	Removed ChangeType = "removed"
+	Changed ChangeType = "changed"
+)
+
+// ReportFormat specifies the output format for reports.
+type ReportFormat string
+
+const (
+	TextFormat     ReportFormat = "text"
+	MarkdownFormat ReportFormat = "markdown"
+)
