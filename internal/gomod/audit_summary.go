@@ -5,50 +5,35 @@ import (
 	"strings"
 )
 
-// AuditSummary holds aggregated counts from an AuditReport.
-type AuditSummary struct {
-	Branch       string
-	TotalEntries int
-	HighRisk     int
-	MediumRisk   int
-	LowRisk      int
-	Added        int
-	Removed      int
-	Changed      int
+// LockSummary holds aggregated statistics about a lock check.
+type LockSummary struct {
+	TotalLocked    int
+	TotalChecked   int
+	ViolationCount int
+	Violations     []string
 }
 
-// SummarizeAudit computes an AuditSummary from an AuditReport.
-func SummarizeAudit(r AuditReport) AuditSummary {
-	s := AuditSummary{
-		Branch:       r.Branch,
-		TotalEntries: len(r.Entries),
+// SummarizeLock produces a LockSummary from a LockFile and a set of violations.
+func SummarizeLock(lf *LockFile, diff []DiffEntry, violations []string) LockSummary {
+	locked := 0
+	if lf != nil {
+		locked = len(lf.Entries)
 	}
-	for _, e := range r.Entries {
-		switch e.Risk {
-		case "high":
-			s.HighRisk++
-		case "medium":
-			s.MediumRisk++
-		default:
-			s.LowRisk++
-		}
-		switch e.ChangeType {
-		case "added":
-			s.Added++
-		case "removed":
-			s.Removed++
-		case "changed":
-			s.Changed++
-		}
+	return LockSummary{
+		TotalLocked:    locked,
+		TotalChecked:   len(diff),
+		ViolationCount: len(violations),
+		Violations:     violations,
 	}
-	return s
 }
 
-// String returns a compact summary string.
-func (s AuditSummary) String() string {
+// String returns a human-readable summary of the lock check.
+func (s LockSummary) String() string {
 	var sb strings.Builder
-	fmt.Fprintf(&sb, "Branch: %s | Total: %d", s.Branch, s.TotalEntries)
-	fmt.Fprintf(&sb, " | Added: %d Removed: %d Changed: %d", s.Added, s.Removed, s.Changed)
-	fmt.Fprintf(&sb, " | Risk — High: %d Medium: %d Low: %d", s.HighRisk, s.MediumRisk, s.LowRisk)
+	sb.WriteString(fmt.Sprintf("Lock summary: %d locked, %d checked, %d violation(s)\n",
+		s.TotalLocked, s.TotalChecked, s.ViolationCount))
+	for _, v := range s.Violations {
+		sb.WriteString("  ! " + v + "\n")
+	}
 	return sb.String()
 }
