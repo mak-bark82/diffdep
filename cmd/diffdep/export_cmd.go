@@ -9,6 +9,9 @@ import (
 	"github.com/yourorg/diffdep/internal/gomod"
 )
 
+// runExport implements the "export" subcommand. It computes the dependency diff
+// between a base branch and a head branch, then writes the result to stdout or
+// a file in the requested format (json or csv).
 func runExport(args []string) error {
 	fs := flag.NewFlagSet("export", flag.ContinueOnError)
 	base := fs.String("base", "main", "base branch")
@@ -18,6 +21,10 @@ func runExport(args []string) error {
 
 	if err := fs.Parse(args); err != nil {
 		return err
+	}
+
+	if *format != "json" && *format != "csv" {
+		return fmt.Errorf("unsupported format %q: must be \"json\" or \"csv\"", *format)
 	}
 
 	client, err := git.NewClient(".")
