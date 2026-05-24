@@ -34,6 +34,16 @@ func NewLockFile(deps []Dependency) *LockFile {
 	return &LockFile{Entries: entries}
 }
 
+// Lookup returns the LockEntry for the given module name, and whether it was found.
+func (lf *LockFile) Lookup(module string) (LockEntry, bool) {
+	for _, e := range lf.Entries {
+		if e.Module == module {
+			return e, true
+		}
+	}
+	return LockEntry{}, false
+}
+
 // CheckLock verifies that all deps in the diff comply with the lock file.
 // Returns a list of violation messages.
 func CheckLock(lf *LockFile, diff []DiffEntry) []string {
