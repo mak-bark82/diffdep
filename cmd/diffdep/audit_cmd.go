@@ -9,6 +9,9 @@ import (
 	"github.com/yourorg/diffdep/internal/gomod"
 )
 
+// runAudit compares dependencies between two branches and produces an audit
+// report. By default it compares the current branch against "main", but both
+// the target branch and the base branch can be overridden via flags.
 func runAudit(args []string) error {
 	fs := flag.NewFlagSet("audit", flag.ContinueOnError)
 	branch := fs.String("branch", "", "branch to audit (default: current)")
@@ -31,6 +34,10 @@ func runAudit(args []string) error {
 		if err != nil {
 			return fmt.Errorf("audit: current branch: %w", err)
 		}
+	}
+
+	if targetBranch == *base {
+		return fmt.Errorf("audit: target branch %q is the same as base branch %q; nothing to compare", targetBranch, *base)
 	}
 
 	loader := git.NewDepsLoader(client)
