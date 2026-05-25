@@ -5,35 +5,40 @@ import (
 	"strings"
 )
 
-// LockSummary holds aggregated statistics about a lock check.
+// LockSummary holds aggregate counts from an audit lock check.
 type LockSummary struct {
-	TotalLocked    int
-	TotalChecked   int
-	ViolationCount int
-	Violations     []string
+	Total    int
+	Locked   int
+	Unlocked int
+	Violations int
 }
 
-// SummarizeLock produces a LockSummary from a LockFile and a set of violations.
-func SummarizeLock(lf *LockFile, diff []DiffEntry, violations []string) LockSummary {
-	locked := 0
-	if lf != nil {
-		locked = len(lf.Entries)
+// SummarizeLock produces a LockSummary from a set of dependencies and a lock file.
+func SummarizeLock(deps []Dependency, lock *LockFile) LockSummary {
+	if lock == nil {
+		return LockSummary{Total: len(deps), Unlocked: len(deps)}
 	}
-	return LockSummary{
-		TotalLocked:    locked,
-		TotalChecked:   len(diff),
-		ViolationCount: len(violations),
-		Violations:     violations,
+	s := LockSummary{Total: len(deps)}
+	violations := CheckLock(deps, lock)
+	s.Violations = len(violations)
+	lockMap := make(map[string]string, len(lock.Entries))
+	for _, e := range lock.Entries {
+		lockMap[e.Module] = e.Version
 	}
+	for _, d := range deps {
+		if _, ok := lockMap[d.Module]; ok {
+			s.Locked++
+		} else {
+			s.Unlocked++
+		}
+	}
+	return s
 }
 
-// String returns a human-readable summary of the lock check.
-func (s LockSummary) String() string {
+// FormatLockSummary returns a short textual summary of the lock state.
+func FormatLockSummary(s LockSummary) string {
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("Lock summary: %d locked, %d checked, %d violation(s)\n",
-		s.TotalLocked, s.TotalChecked, s.ViolationCount))
-	for _, v := range s.Violations {
-		sb.WriteString("  ! " + v + "\n")
-	}
+	fmt.Fprintf(&sb, "Lock summary: %d total, %d locked, %d unlocked, %d violations\n",
+		s.Total, s.Locked, s.Unlocked, s.Violations)
 	return sb.String()
 }
